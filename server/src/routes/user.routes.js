@@ -7,6 +7,8 @@ router.route("/register").post(RegisterUser)
 router.route("/login").post(LoginUser)
 router.route("/logout").post(LogOutUser)
 
+
+
 export default router
 
 

@@ -21,7 +21,7 @@ const CreateShortUrl = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Please enter URL");
     }
 
-    const shortUrl = nanoid(12);
+    const shortCode = nanoid(12);
 
     const url = await Url.create({
         originalUrl,

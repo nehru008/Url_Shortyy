@@ -1,11 +1,12 @@
 
 import { Router } from "express";
-
 const router = Router() 
 
-router.route("/geturl").post(RegisterUser)
-router.route("/updateurl").post(LoginUser)
-router.route("/logout").post(LogOutUser)
+import { CreateShortUrl } from "../controllers/url.controller.js";
+import { getUrlHistory } from "../controllers/user.controller.js";
+
+router.route("/shorten").post(CreateShortUrl)
+router.route("/history").get(getUrlHistory)
 
 export default router
 
