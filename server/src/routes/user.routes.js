@@ -5,7 +5,7 @@ const router = Router()
 
 router.route("/register").post(RegisterUser)
 router.route("/login").post(LoginUser)
-router.route("/logout").post(LogOutUser)
+router.post("/logout", verifyJWT, LogOutUser);
 
 
 

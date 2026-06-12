@@ -4,35 +4,190 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { Url } from "../models/url.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import ApiResponse from "../utils/ApiResponse.js";
 
-const LoginUser = asyncHandler(async (req,res)=>{
 
-    let { username, email, password } = req.body;
+const generateAccessAndRefreshTokens = async (userId) => {
+    try {
+        const user = await User.findById(userId);
 
-    username = username?.trim();
-    email = email?.trim();
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
 
-    if (!(username || email)) {
-        throw new ApiError(
-            400,
-            "Username or email is required"
+        const accessToken =
+            user.generateAccessToken();
+
+        const refreshToken =
+            user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+
+        await user.save({
+            validateBeforeSave: false,
+        });
+
+        return {
+            accessToken,
+            refreshToken,
+        };
+
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+};
+
+const RefreshAccessToken = asyncHandler(
+    async (req, res) => {
+
+        const incomingRefreshToken =
+            req.cookies?.refreshToken;
+
+        if (!incomingRefreshToken) {
+            throw new ApiError(
+                401,
+                "Unauthorized access"
+            );
+        }
+
+        const decodedToken =
+            jwt.verify(
+                incomingRefreshToken,
+                process.env.REFRESH_TOKEN_SECRET
+            );
+
+        const user = await User.findById(
+            decodedToken?._id
         );
+
+        if (!user) {
+            throw new ApiError(
+                404,
+                "User not found"
+            );
+        }
+
+        if (
+            incomingRefreshToken !==
+            user.refreshToken
+        ) {
+            throw new ApiError(
+                401,
+                "Invalid refresh token"
+            );
+        }
+
+        const newAccessToken =
+            user.generateAccessToken();
+
+        const options = {
+            httpOnly: true,
+            secure:
+                process.env.NODE_ENV ===
+                "production"
+        };
+
+        return res
+            .status(200)
+            .cookie(
+                "accessToken",
+                newAccessToken,
+                options
+            )
+            .json(
+                new ApiResponse(
+                    200,
+                    {
+                        accessToken:
+                            newAccessToken
+                    },
+                    "Access token refreshed successfully"
+                )
+            );
+    }
+);
+
+const LoginUser = asyncHandler(async (req, res) => {
+
+    const { username, email, password } = req.body;
+
+    if (!password) {
+        throw new ApiError(400, "Password is required");
     }
 
-    if (!password?.trim()) {
+    if (!username && !email) {
         throw new ApiError(
             400,
-            "Password is required"
+            "Please provide username or email"
         );
     }
 
     const user = await User.findOne({
-        $or:[{email?,username}]
-    })
+        $or: [
+            { username },
+            { email }
+        ]
+    });
 
-    const OriginalPassword = 
-})
+    if (!user) {
+        throw new ApiError(
+            404,
+            "User does not exist"
+        );
+    }
 
+    const isPasswordValid =
+        await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(
+            401,
+            "Invalid credentials"
+        );
+    }
+
+    const {
+        accessToken,
+        refreshToken
+    } = await generateAccessAndRefreshTokens(
+        user._id
+    );
+
+    const loggedInUser = await User
+        .findById(user._id)
+        .select("-password -refreshToken");
+
+    const options = {
+        httpOnly: true,
+        secure:
+            process.env.NODE_ENV === "production"
+    };
+
+    return res
+        .status(200)
+        .cookie(
+            "accessToken",
+            accessToken,
+            options
+        )
+        .cookie(
+            "refreshToken",
+            refreshToken,
+            options
+        )
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser,
+                    accessToken,
+                    refreshToken
+                },
+                "User logged in successfully"
+            )
+        );
+});
 const RegisterUser = asyncHandler(async (req, res) => {
 
     const { username, fullName, email, password } = req.body;
@@ -84,9 +239,37 @@ const RegisterUser = asyncHandler(async (req, res) => {
     });
 });
 
-const LogOutUser = asyncHandler(async (req,res)=>{
-    
-})
+const LogOutUser = asyncHandler(async (req, res) => {
+
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken: 1
+            }
+        },
+        {
+            new: true
+        }
+    );
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(
+            new ApiResponse(
+                200,
+                {},
+                "User Logged Out Successfully!!"
+            )
+        );
+});
 
 const ChangePassword = asyncHandler(async (req,res)=>{
 
@@ -95,6 +278,7 @@ const ChangePassword = asyncHandler(async (req,res)=>{
 const UpdateAccountDetails = asyncHandler(async (req,res)=>{
     
 })
+
 
 const getUrlHistory = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
@@ -150,5 +334,7 @@ const getUrlHistory = asyncHandler(async (req, res) => {
         )
     );
 });
+
+
 
 export {LogOutUser , LoginUser , RegisterUser , ChangePassword , UpdateAccountDetails , getUrlHistory }
