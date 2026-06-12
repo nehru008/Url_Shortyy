@@ -1,6 +1,6 @@
 
 import mongoose , {Schema} from "mongoose";
-import ApiError from "../utils/ApiError";
+import ApiError from "../utils/ApiError.js";
 import bcrpt from "bcrypt"
 import jwt from "jsonwebtoken"
 

@@ -39,4 +39,4 @@ const CreateShortUrl = asyncHandler(async (req, res) => {
     );
 });
 
-export {CreateShortUrl , getOriginalUrl}
+export {CreateShortUrl }
