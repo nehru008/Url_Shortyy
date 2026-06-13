@@ -11,7 +11,12 @@ import Register from "./pages/Register.jsx";
 import Shortener from "./pages/Shortener.jsx";
 
 export default function App() {
+
+  console.log("API URL:", import.meta.env.VITE_API_BASE_URL);
+  
   return (
+
+    
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />

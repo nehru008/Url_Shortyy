@@ -5,8 +5,6 @@ import { User } from "../models/user.model.js";
 import { Url } from "../models/url.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
-import { useImperativeHandle } from "react";
-
 
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
@@ -341,49 +339,16 @@ const getUrlHistory = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Please login first");
     }
 
-    const history = await User.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(userId)
-            }
-        },
-        {
-            $lookup: {
-                from: "urls",
-                localField: "urlHistory",
-                foreignField: "_id",
-                as: "urlHistory",
-                pipeline: [
-                    {
-                        $project: {
-                            originalUrl: 1,
-                            shortCode: 1,
-                            clicks: 1,
-                            createdAt: 1
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            $project: {
-                urlHistory: 1
-            }
-        }
-    ]);
-
-    if (!history.length) {
-        throw new ApiError(404, "User not found");
-    }
-
-    if (!history[0].urlHistory.length) {
-        throw new ApiError(404, "History is empty");
-    }
+    const history = await Url.find({
+        createdBy: userId
+    }).sort({
+        createdAt: -1
+    });
 
     return res.status(200).json(
         new ApiResponse(
             200,
-            history[0].urlHistory,
+            history,
             "History fetched successfully"
         )
     );

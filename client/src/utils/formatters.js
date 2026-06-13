@@ -13,8 +13,11 @@ export const compactNumber = (value) =>
 export const getShortUrl = (item) => {
   if (item?.shortUrl) return item.shortUrl;
   if (!item?.shortCode) return "";
-  const base = import.meta.env.VITE_PUBLIC_SHORT_URL_BASE || window.location.origin;
-  return `${base.replace(/\/$/, "")}/${item.shortCode}`;
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8004/api/v1";
+  const shortUrlBase = import.meta.env.VITE_PUBLIC_SHORT_URL_BASE || `${apiBaseUrl.replace(/\/$/, "")}/url`;
+
+  return `${shortUrlBase.replace(/\/$/, "")}/${item.shortCode}`;
 };
 
 export const truncateMiddle = (value = "", max = 58) => {

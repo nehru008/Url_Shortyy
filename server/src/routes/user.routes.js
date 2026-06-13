@@ -13,10 +13,10 @@ router.route("/register").post(
 router.route("/login").post(LoginUser)
 router.route("/logout").post(verifyJWT , LogOutUser)
 
-router.route("/change-password").post(VerifyJWT, ChangeCurrentPassword)
-router.route("/current-user").get(VerifyJWT, getCurrentUser)
-router.route("/update-account").patch(VerifyJWT, UpdateAccountDetails)
-router.route("get-urlHistory").patch(VerifyJWT,getUrlHistory )
+router.route("/change-password").post(verifyJWT, ChangeCurrentPassword)
+router.route("/current-user").get(verifyJWT, getCurrentUser)
+router.route("/update-account").patch(verifyJWT, UpdateAccountDetails)
+router.route("get-urlHistory").patch(verifyJWT,getUrlHistory )
 
 
 

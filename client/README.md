@@ -9,6 +9,7 @@ React + Vite + Tailwind CSS frontend for the URL shortener.
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api/v1
+VITE_PUBLIC_SHORT_URL_BASE=http://localhost:5000/api/v1/url
 ```
 
 3. Install dependencies:
@@ -37,3 +38,5 @@ Current assumptions:
 - `GET /url/history`
 
 If your backend route names differ, update only `src/services/api.js`.
+
+`VITE_PUBLIC_SHORT_URL_BASE` controls how short links are displayed when history records only include a `shortCode`.

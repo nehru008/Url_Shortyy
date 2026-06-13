@@ -1,12 +1,15 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8004/api/v1";
 const TOKEN_KEY = "url_shortyy_access_token";
 const USER_KEY = "url_shortyy_user";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  // The backend returns accessToken in the login response, and protected routes
+  // accept Authorization: Bearer tokens. Avoid credentialed CORS requests here
+  // so login still works if cookie CORS is not enabled server-side.
+  withCredentials: false,
   headers: {
     "Content-Type": "application/json",
   },
@@ -21,8 +24,21 @@ apiClient.interceptors.request.use((config) => {
 });
 
 const unwrap = (response) => response.data?.data ?? response.data;
-const messageFromError = (error) =>
-  error.response?.data?.message || error.response?.data?.error || error.message || "Something went wrong";
+const messageFromError = (error) => {
+  if (!error.response && error.request) {
+    return "Could not reach the API. Check that the backend is running, VITE_API_BASE_URL is correct, and the app is opened at http://localhost:5173.";
+  }
+
+  const status = error.response?.status;
+  const fallbackByStatus = {
+    400: "The login details are incomplete or invalid.",
+    401: "Invalid username/email or password.",
+    404: "No account was found for those login details.",
+    500: "The server hit an error while processing the request.",
+  };
+
+  return error.response?.data?.message || error.response?.data?.error || fallbackByStatus[status] || error.message || "Something went wrong";
+};
 
 export const storage = {
   tokenKey: TOKEN_KEY,

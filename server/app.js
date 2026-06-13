@@ -8,6 +8,13 @@ app.use(express.urlencoded({extended: true,limit:"16kb"}))
 
 app.use(cookieParser())
 
+import cors from "cors"
+
+app.use(cors({
+    origin:"http://localhost:5173",
+    credentails:true 
+}))
+
 
 import UserRouter from "./src/routes/user.routes.js"
 import UrlRouter from "./src/routes/url.routes.js"
