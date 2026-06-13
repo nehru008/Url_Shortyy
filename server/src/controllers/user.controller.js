@@ -5,6 +5,7 @@ import { User } from "../models/user.model.js";
 import { Url } from "../models/url.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import { useImperativeHandle } from "react";
 
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -109,7 +110,7 @@ const RefreshAccessToken = asyncHandler(
 );
 
 const LoginUser = asyncHandler(async (req, res) => {
-
+    console.log("LOGIN BODY:", req.body);
     const { username, email, password } = req.body;
 
     if (!password) {
@@ -188,8 +189,8 @@ const LoginUser = asyncHandler(async (req, res) => {
             )
         );
 });
-const RegisterUser = asyncHandler(async (req, res) => {
 
+const RegisterUser = asyncHandler(async (req, res) => {
     const { username, fullName, email, password } = req.body;
 
     if (
@@ -210,17 +211,16 @@ const RegisterUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Email or Username already exists");
     }
 
-    const avatarLocalProfile =
-        req.files?.profile?.[0]?.path;
+    console.log("REQ.FILE =", req.file);
+    const avatarLocalPath = req.file?.path;
 
-    if (!avatarLocalProfile) {
+    if (!avatarLocalPath) {
         throw new ApiError(400, "Profile picture is required");
     }
 
-    const file =
-        await uploadOnCloudinary(avatarLocalProfile);
+    const uploadedFile = await uploadOnCloudinary(avatarLocalPath);
 
-    if (!file) {
+    if (!uploadedFile) {
         throw new ApiError(400, "File upload failed");
     }
 
@@ -229,7 +229,7 @@ const RegisterUser = asyncHandler(async (req, res) => {
         fullName,
         email,
         password,
-        profile: file.secure_url
+        profile: uploadedFile.secure_url
     });
 
     return res.status(201).json({
@@ -271,13 +271,67 @@ const LogOutUser = asyncHandler(async (req, res) => {
         );
 });
 
-const ChangePassword = asyncHandler(async (req,res)=>{
+const ChangeCurrentPassword = asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body;
 
-})
+    const user = await User.findById(req.user?._id);
 
-const UpdateAccountDetails = asyncHandler(async (req,res)=>{
-    
-})
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if (!isPasswordCorrect) {
+        throw new ApiError(400, "Old password does not match");
+    }
+
+    user.password = newPassword;
+
+    await user.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password changed successfully"));
+});
+
+const getCurrentUser = asyncHandler(async(req, res) => {
+    return res
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        req.user,
+        "User fetched successfully"
+    ))
+});
+
+const UpdateAccountDetails = asyncHandler(async (req, res) => {
+
+    const { fullName, email } = req.body;
+
+    if (!fullName || !email) {
+        throw new ApiError(400, "Full name and email are required");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                email
+            }
+        },
+        {
+            new: true
+        }
+    ).select("-password");
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "User details updated successfully"
+            )
+        );
+});
 
 
 const getUrlHistory = asyncHandler(async (req, res) => {
@@ -337,4 +391,4 @@ const getUrlHistory = asyncHandler(async (req, res) => {
 
 
 
-export {LogOutUser , LoginUser , RegisterUser , ChangePassword , UpdateAccountDetails , getUrlHistory }
+export {LogOutUser , LoginUser , getCurrentUser , RegisterUser , ChangeCurrentPassword , UpdateAccountDetails , getUrlHistory }

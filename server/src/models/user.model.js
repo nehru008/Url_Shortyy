@@ -1,7 +1,7 @@
 
 import mongoose , {Schema} from "mongoose";
 import ApiError from "../utils/ApiError.js";
-import bcrpt from "bcrypt"
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken"
 
 const UserSchema = new Schema({
@@ -44,15 +44,13 @@ const UserSchema = new Schema({
 )
 
 
-UserSchema.pre("save", async function (next) {
+UserSchema.pre("save", async function () {
 
     if (!this.isModified("password")) {
-        return next();
+        return ;
     }
 
     this.password = await bcrypt.hash(this.password, 10);
-
-    next();
 });
 
 UserSchema.methods.isPasswordCorrect = async function (password) {
@@ -69,7 +67,7 @@ UserSchema.methods.generateAccessToken = function () {
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn: proceess.env.ACCESS_TOKEN_EXPIRY,
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
         }
     );
 };
@@ -82,9 +80,9 @@ UserSchema.methods.generateRefreshToken = async function (){
             username: this.username,
             fullName: this.fullName
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn: proceess.env.REFRESH_TOKEN_EXPIRY,
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
         }
     );
 }
